@@ -28,8 +28,8 @@ func  handleRequest() {
 	// myRouter.HandleFunc("/pdas/{id}/code", getPdaSpec)
 	// myRouter.HandleFunc("/pdas/{id}/c3state", c3state)
 
-	// myRouter.HandleFunc("/replicas_pdas", returnAllReplicas)
-	// myRouter.HandleFunc("/replicas_pdas/{gid}", returnAllReplicas)
+	myRouter.HandleFunc("/replicas_pdas", returnAllReplicas)
+	myRouter.HandleFunc("/replicas_pdas/{gid}", createReplica)
 	// myRouter.HandleFunc("/replicas_pdas/{gid}/reset", returnAllReplicas)
 	// myRouter.HandleFunc("/replicas_pdas/{gid}/members", returnAllReplicas)
 	// myRouter.HandleFunc("/replicas_pdas/{gid}/connect", returnAllReplicas)

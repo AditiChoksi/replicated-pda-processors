@@ -37,7 +37,25 @@ type HoldBackStruct struct {
 	Hold_back_Token string
 }
 
-type ReplicaGroup struct{
+type ReplicaInfo struct{
 	GroupId string
 	MemberIds [] string
+}
+
+type ReplicaGroup struct{
+	GroupId string
+	Group_members [] string
+	Pda_code PDACode
+}
+
+type PDACode struct{
+	Id string
+	Name string
+	States [] string
+	Input_alphabet [] string
+	Stack_alphabet [] string
+	Accepting_states [] string
+	Start_state string
+	Transitions [][]string
+	Eos string
 }
