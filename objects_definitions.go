@@ -36,3 +36,8 @@ type HoldBackStruct struct {
 	Hold_back_Position string
 	Hold_back_Token string
 }
+
+type ReplicaGroup struct{
+	GroupId string
+	MemberIds [] string
+}

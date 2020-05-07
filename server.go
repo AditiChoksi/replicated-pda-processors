@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"encoding/json"
-	"log"
 	"github.com/gorilla/mux"
 	"strconv"
 	"sort"
@@ -101,13 +100,6 @@ func is_accepted(w http.ResponseWriter, r *http.Request) {
 	{
 		json.NewEncoder(w).Encode("Input tokens Rejected by the PDA")
 	}
-}
-
-// The done returns the final status of the current state and the stack after the input string is processed.
-func done(proc PDAProcessor, is_accepted bool, transition_count int) {
-	fmt.Println("pda = ", proc.Name,"::total_clock = ", transition_count, "::method = is_accepted = ", is_accepted,"::Current State = ", proc.Current_State)
-	fmt.Println("Current_state: ", proc.Current_State)
-	fmt.Println(proc.Stack)
 }
 
 // Returns the current state of the PDA
@@ -273,26 +265,6 @@ func eos(w http.ResponseWriter, r *http.Request) {
 	cache[id] = proc
 }
 
-//Checks whether the input string is composed of the allowed characters. 
-func verify_Input_String(proc PDAProcessor, input_string string)bool{
-	var input_symbols = proc.Input_alphabet
-	verify:=false
-	for i :=0; i < len(input_string); i++ {
-		verify=false
-		for j :=0; j < len(input_symbols); j++ {
-			if string(input_string[i]) == input_symbols[j] {
-				verify = true
-				break
-			}
-		}
-		
-		if verify == false {
-			break
-		}
-	}
-	return verify
-}
-
 func deletePda(w http.ResponseWriter, r *http.Request) {
 	var vars = mux.Vars(r)
 	var id = vars["id"]
@@ -312,29 +284,3 @@ func close(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Success. No resources to clean.")
 }
 
-func  handleRequest() {
-	myRouter := mux.NewRouter().StrictSlash(true)
-
-	myRouter.HandleFunc("/pdas", returnAllPdas)
-	myRouter.HandleFunc("/pdas/{id}", createPda)
-	myRouter.HandleFunc("/pdas/{id}/reset", reset)
-	myRouter.HandleFunc("/pdas/{id}/tokens/{position}", put)
-	myRouter.HandleFunc("/pdas/{id}/eos/{position}", eos)
-	myRouter.HandleFunc("/pdas/{id}/is_accepted", is_accepted)
-	myRouter.HandleFunc("/pdas/{id}/stack/top/{k}", peek)
-	myRouter.HandleFunc("/pdas/{id}/stack/len", stacklen)
-	myRouter.HandleFunc("/pdas/{id}/state", current_state)
-	myRouter.HandleFunc("/pdas/{id}/tokens", gettokens)
-	myRouter.HandleFunc("/pdas/{id}/snapshot/{k}", snapshot)
-	myRouter.HandleFunc("/pdas/{id}/close", close)
-	myRouter.HandleFunc("/pdas/{id}/delete", deletePda)
-
-
-	log.Fatal(http.ListenAndServe(":8080", myRouter))
-}
-
-func main(){
-	fmt.Println("Server started. Listening at port 8080")
-
-	handleRequest()
-}
