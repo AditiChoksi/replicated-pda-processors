@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"log"
 )
 
 // Function to push data on to the stack when executing the PDA. It modifies the stack.
@@ -37,23 +38,15 @@ func resetInternal(p *PDAProcessor) {
 	p.Current_State = p.Start_state
 	p.Next_Position = 0
 	p.Hold_back_Queue = make([]HoldBackStruct, 0)
-}
+}	
 
 // create the PDA struct from the request json
-func open(id string, p PDAProcessor) bool {
-	
+func open(id string, p PDAProcessor) {
 	p.Id = id
-
-	_, found := cache[id]
-
-	if !found {
-		resetInternal(&p)
-		cache[id] = p
-		return true
-	}
-
-	return false
+	resetInternal(&p)
+	cache[id] = p	
 }
+
 
 // Function to check if the input string has been accepted by the pda 
 func is_accepted_internal(proc PDAProcessor) bool{
@@ -216,4 +209,31 @@ func check_for_first_move(proc *PDAProcessor, transition_count int){
 		fmt.Println()
 	} 
 
+}
+
+
+func updateStateInfo(currentPdaId string, lastupdatePdaId string) bool {
+
+	if currentPdaId  != lastupdatePdaId {
+		lastUpdatedPda := cache[lastupdatePdaId]
+		currentPda, found := cache[currentPdaId]
+
+		if !found {
+			output := "Pda with id " + currentPdaId + " does not exist."
+			log.Print("Error occurred. Bad Request.")
+			log.Print(output)
+
+			return false
+		}
+	
+		currentPda.Stack = lastUpdatedPda.Stack
+		currentPda.Current_State = lastUpdatedPda.Current_State
+		currentPda.Next_Position = lastUpdatedPda.Next_Position
+		currentPda.Hold_back_Queue = lastUpdatedPda.Hold_back_Queue
+	
+		cache[currentPdaId] = currentPda
+
+	}
+
+	return true
 }

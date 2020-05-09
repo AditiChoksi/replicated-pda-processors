@@ -2,6 +2,7 @@ package main
 
 // This class simulates a PDA processor that is it runs the PDA for teh provided input.
 type PDAProcessor struct{
+	Gid string
 	Id string
 	Name string
 	States [] string
@@ -37,13 +38,8 @@ type HoldBackStruct struct {
 	Hold_back_Token string
 }
 
-type ReplicaInfo struct{
-	GroupId string
-	MemberIds [] string
-}
-
 type ReplicaGroup struct{
-	GroupId string
+	Gid string
 	Group_members [] string
 	Pda_code PDACode
 }

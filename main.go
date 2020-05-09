@@ -24,17 +24,17 @@ func  handleRequest() {
 	myRouter.HandleFunc("/pdas/{id}/close", close)
 	myRouter.HandleFunc("/pdas/{id}/delete", deletePda)
 
-	// myRouter.HandleFunc("/pdas/{id}/join", joinGroup)
-	// myRouter.HandleFunc("/pdas/{id}/code", getPdaSpec)
+	myRouter.HandleFunc("/pdas/{id}/join", joinGroup)
+	myRouter.HandleFunc("/pdas/{id}/code", getPdaSpec)
 	// myRouter.HandleFunc("/pdas/{id}/c3state", c3state)
 
-	myRouter.HandleFunc("/replicas_pdas", returnAllReplicas)
-	myRouter.HandleFunc("/replicas_pdas/{gid}", createReplica)
-	// myRouter.HandleFunc("/replicas_pdas/{gid}/reset", returnAllReplicas)
-	// myRouter.HandleFunc("/replicas_pdas/{gid}/members", returnAllReplicas)
-	// myRouter.HandleFunc("/replicas_pdas/{gid}/connect", returnAllReplicas)
+	myRouter.HandleFunc("/replica_pdas", returnAllReplicas)
+	myRouter.HandleFunc("/replica_pdas/{gid}", createReplica)
+	myRouter.HandleFunc("/replica_pdas/{gid}/reset", resetMembers)
+	myRouter.HandleFunc("/replica_pdas/{gid}/members", returnAllProcessorsInAGroup)
+	myRouter.HandleFunc("/replica_pdas/{gid}/connect", returnRandomPDAProcessor)
 	// myRouter.HandleFunc("/replicas_pdas/{gid}/close", returnAllReplicas)
-	// myRouter.HandleFunc("/replicas_pdas/{gid}/delete", returnAllReplicas)
+	myRouter.HandleFunc("/replica_pdas/{gid}/delete", deleteReplicaGroup)
 
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))

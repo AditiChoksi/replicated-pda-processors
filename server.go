@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"encoding/json"
+	"log"
 	"github.com/gorilla/mux"
 	"strconv"
 	"sort"
@@ -11,13 +12,13 @@ import (
 )
 
 var wg sync.WaitGroup
-var cache = make(map[string]PDAProcessor) 
+var cache = make(map[string]PDAProcessor)
 
 // Function to pop data from the stack when executing the PDA. It modifies the stack.
 func stacklen(w http.ResponseWriter, r *http.Request) {
 	var vars = mux.Vars(r)
 	var id = vars["id"]
-
+	handleCookies(w,r,id)
 	proc := cache[id]
 	var l = len(proc.Stack)
 
@@ -29,6 +30,7 @@ func peek(w http.ResponseWriter, r *http.Request) {
 
 	var vars = mux.Vars(r)
 	var id = vars["id"]
+	handleCookies(w,r,id)
 	var kstring = vars["k"]
 	k, _ := strconv.Atoi(kstring)
 
@@ -63,14 +65,10 @@ func createPda(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
 	}
-	created := open(id, p)
-
-	if created {
-		json.NewEncoder(w).Encode("PDA successfully created.")
-	} else 
-	{
-		json.NewEncoder(w).Encode("Cannot create PDA. A PDA with this id already exists.")
-	}
+	
+	open(id, p)
+	json.NewEncoder(w).Encode("PDA successfully created and/or replaced.")
+	
 }
 
 func returnAllPdas(w http.ResponseWriter, r *http.Request) {
@@ -86,11 +84,31 @@ func returnAllPdas(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(pdalist)
 }
 
+func getPdaSpec(w http.ResponseWriter, r *http.Request){
+	fmt.Println("Endpoint Hit: Get JSON spec code of the Pda")
+	var vars = mux.Vars(r)
+	var id = vars["id"]
+	handleCookies(w,r,id)
+	pdaProc := cache[id]
+	var pdaCode PDACode
+	pdaCode.Id = pdaProc.Id
+	pdaCode.Name = pdaProc.Name
+	pdaCode.States = pdaProc.States
+	pdaCode.Input_alphabet = pdaProc.Input_alphabet
+	pdaCode.Stack_alphabet = pdaProc.Stack_alphabet
+	pdaCode.Start_state = pdaProc.Start_state
+	pdaCode.Transitions = pdaProc.Transitions
+	pdaCode.Eos = pdaProc.Eos
+
+	json.NewEncoder(w).Encode(pdaCode)
+
+}
+
 // Function to check if the input string has been accepted by the pda 
 func is_accepted(w http.ResponseWriter, r *http.Request) {
 	var vars = mux.Vars(r)
 	var id = vars["id"]
-
+	handleCookies(w,r,id)
 	proc := cache[id]
 
 	flag := is_accepted_internal(proc)
@@ -106,6 +124,7 @@ func is_accepted(w http.ResponseWriter, r *http.Request) {
 func current_state(w http.ResponseWriter, r *http.Request) {
 	var vars = mux.Vars(r)
 	var id = vars["id"]
+	handleCookies(w,r,id)
 
 	proc := cache[id]
 
@@ -114,9 +133,13 @@ func current_state(w http.ResponseWriter, r *http.Request) {
 }
 
 func put(w http.ResponseWriter, r *http.Request) {
+
 	fmt.Println("Endpoint Hit: Put")
 	var vars = mux.Vars(r)
 	var id = vars["id"]
+
+	handleCookies(w,r,id)
+
 	var position = vars["position"]
 
 	var t Token
@@ -178,16 +201,17 @@ func put(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Conflicting values for token at the same position.")
 	}	
 	if (token_blocked == -1 && !hold_back_flag) {
-		json.NewEncoder(w).Encode("Token processed successfully. Please enter the next token")
+		json.NewEncoder(w).Encode("Token processed successfully. Processing queued tokens.")
 	} else if (!hold_back_flag) {
 		flag := is_accepted_internal(proc)
 		if(flag){
-			json.NewEncoder(w).Encode("Input tokens successfully Accepted")
+			json.NewEncoder(w).Encode("Input tokens successfully Accepted.")
 		} else
 		{
-			json.NewEncoder(w).Encode("Input tokens Rejected by the PDA")
+			json.NewEncoder(w).Encode("Input tokens Rejected by the PDA.")
 		}
-	} 
+	}
+
 }
 
 
@@ -196,7 +220,7 @@ func gettokens(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: Get Queued tokens")
 	var vars = mux.Vars(r)
 	var id = vars["id"]
-
+	handleCookies(w,r,id)
 	proc := cache[id]
 
 	for j := 0; j < len(proc.Hold_back_Queue)-1; j++ {
@@ -209,6 +233,7 @@ func snapshot(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: Get snapshot")
 	var vars = mux.Vars(r)
 	var id = vars["id"]
+	handleCookies(w,r,id)
 
 	proc := cache[id]
 	var snap Snapshot
@@ -227,6 +252,7 @@ func eos(w http.ResponseWriter, r *http.Request) {
 
 	var vars = mux.Vars(r)
 	var id = vars["id"]
+	handleCookies(w,r,id)
 	var position = vars["position"]
 	pos_int, _ := strconv.Atoi(position)
 
@@ -253,16 +279,39 @@ func eos(w http.ResponseWriter, r *http.Request) {
 	}
 	if currentStackSymbol == proc.Eos && pos_int == proc.Next_Position{
 		fmt.Println("")
-		fmt.Println("Popping last $ from the stack")
-		fmt.Println("Current State ",proc.Current_State)
-		fmt.Println("New State ",target_state)
+		fmt.Println("Current State ", proc.Current_State)
+		
 		proc.Current_State = target_state
+		fmt.Println("New State ", proc.Current_State)
+		
 		if length_of_stack > 0 {
 			pop(&proc)
+			fmt.Println("Popping last $ from the stack")
+			log.Print(len(proc.Stack))
 		}
 	}
 
 	cache[id] = proc
+}
+
+//Checks whether the input string is composed of the allowed characters. 
+func verify_Input_String(proc PDAProcessor, input_string string)bool{
+	var input_symbols = proc.Input_alphabet
+	verify:=false
+	for i :=0; i < len(input_string); i++ {
+		verify=false
+		for j :=0; j < len(input_symbols); j++ {
+			if string(input_string[i]) == input_symbols[j] {
+				verify = true
+				break
+			}
+		}
+		
+		if verify == false {
+			break
+		}
+	}
+	return verify
 }
 
 func deletePda(w http.ResponseWriter, r *http.Request) {
@@ -283,4 +332,3 @@ func deletePda(w http.ResponseWriter, r *http.Request) {
 func close(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Success. No resources to clean.")
 }
-
